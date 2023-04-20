@@ -163,19 +163,20 @@ const upload = (req, res) => {
     // verify right extension
     if (fileExtension != 'png' && fileExtension != 'jpg' && fileExtension != 'jpeg' && fileExtension != 'gif') {
         fs.unlink(req.file.path, () => {
-            return req.status(400).json({
+            return res.status(400).json({
                 status: 'error',
                 message: 'invalid file extension'
             })
         })
     }
-    // update article
-
-    return res.status(200).json({
-        status: 'Success',
-        splitFile,
-        files: req.file
-    });
+    else {
+        // update article
+        return res.status(200).json({
+            status: 'Success',
+            splitFile,
+            files: req.file
+        });
+    }
 }
 
 module.exports = {
