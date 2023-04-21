@@ -1,6 +1,7 @@
 const validator = require('validator');
 const Article = require('../models/Articles');
 const fs = require('fs');
+const path = require('path');
 
 // Testing middlewares
 const test = (req, res) => {
@@ -144,7 +145,7 @@ const dataValidation = async (parameters) => {
     };
 }
 
-const upload = (req, res) => {
+const upload = async (req, res) => {
     // get uploaded image file
     console.log(req.file)
     if (!req.file) {
@@ -171,13 +172,61 @@ const upload = (req, res) => {
     }
     else {
         // update article
+        const id = req.params.id;
+
+        const updateArticle = await Article.findByIdAndUpdate({_id: id}, {image: req.file.filename}, {returnDocument: 'after'});
+
         return res.status(200).json({
             status: 'Success',
-            splitFile,
-            files: req.file
+            article: updateArticle,
+            file: req.file
         });
     }
 }
+
+const image = (req, res) => {
+  const file = req.params.file
+  const filePath = './images/articles/' + file;
+
+  fs.stat(filePath, (err, access) => {
+    if (access) {
+        return res.sendFile(path.resolve(filePath));
+    }
+    else {
+        return res.status(404).json({
+            status: 'error',
+            message: 'Image does not exist'
+        })
+    }
+  });
+}
+
+const finder = async (req, res) => {
+    try {
+        const search = req.params.searching;
+        
+        const foundArticles = await Article.find({ 
+            $or: [
+                {title: {$regex: search, $options: 'i'}},
+                {content: {$regex: search, $options: 'i'}},
+        ] })
+        .sort({date: -1})
+        .exec();
+
+        return res.status(200).json({
+            status: 'success',
+            articles: foundArticles,
+        });
+        
+    } catch (error) {
+        if (error || foundArticles.length <= 0) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'No articles found'
+            });
+        }
+    }
+};
 
 module.exports = {
     test,
@@ -188,4 +237,6 @@ module.exports = {
     deleteOneArticle,
     updateArticle,
     upload,
+    image,
+    finder,
 }
